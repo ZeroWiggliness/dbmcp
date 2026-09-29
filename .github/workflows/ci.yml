@@ -1,0 +1,55 @@
+name: CI
+on:
+  pull_request:
+  push:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Check formatting
+        run: dotnet format DbMcp.slnx --verify-no-changes --exclude DbMcp.Tests/obj DbMcp.Tests/bin
+      - name: Test with coverage
+        run: dotnet test DbMcp.Tests/DbMcp.Tests.csproj -c Release --collect:"XPlat Code Coverage" --results-directory ./TestResults
+      - name: Enforce 95% line coverage
+        run: |
+          python3 - <<'PY'
+          import glob
+          import sys
+          import xml.etree.ElementTree as ET
+
+          reports = glob.glob('TestResults/**/coverage.cobertura.xml', recursive=True)
+          if len(reports) != 1:
+              sys.exit('Expected exactly one coverage report')
+          rate = float(ET.parse(reports[0]).getroot().attrib['line-rate'])
+          print(f'Line coverage: {rate:.2%}')
+          if rate < 0.95:
+              sys.exit('Line coverage below 95%')
+          PY
+
+  publish:
+    if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}:latest" >> "$GITHUB_ENV"
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGE }}

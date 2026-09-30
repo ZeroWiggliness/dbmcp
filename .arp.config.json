@@ -7,13 +7,13 @@
     "maxCommits": 100,
     "includeChores": true
   },
-  "version": "v0.0.0",
+  "version": "v0.0.1",
   "versionPrefix": "v",
   "manifests": [
     {
       "path": ".",
       "type": "csharp",
-      "version": "0.0.0"
+      "version": "0.0.1"
     }
   ]
 }

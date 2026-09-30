@@ -4,3 +4,5 @@
 .vs/
 *.user
 appsettings.Development.json
+.coverage/
+.dist/

@@ -1,3 +1,11 @@
+## v0.0.3
+
+### Chores
+* fix wiki pages ([#21](https://github.com/ZeroWiggliness/dbmcp/issues/21)) ([4adfbf1](https://github.com/ZeroWiggliness/dbmcp/commit/4adfbf11fd1752aa3a78b226baf2610d647599f1))
+
+---
+_Generated on 2026-09-30_
+
 ## v0.0.2
 
 ### Chores

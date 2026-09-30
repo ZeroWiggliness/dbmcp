@@ -18,7 +18,7 @@ The double underscore `__` separates levels. For example, `DbMcp__Databases__loc
 | Setting | Required | Default | Notes |
 | --- | --- | --- | --- |
 | `Provider` | Yes | | Exactly one of `SqlServer`, `MySql`, `Postgres`, `MongoDb` (case-sensitive). |
-| `Address` | Yes, unless `ConnectionString` is set | | Host name or IP **as seen from inside the container**. See [[Docker on Windows|Docker-on-Windows]]. |
+| `Address` | Yes, unless `ConnectionString` is set | | Host name or IP **as seen from inside the container**. See [Docker on Windows](Docker-on-Windows). |
 | `Port` | No | MySQL `3306`, Postgres `5432`, MongoDB `27017`, SQL Server driver default (`1433`) | |
 | `DefaultDatabase` | Yes, unless `ConnectionString` is set | | For MongoDB it can come from the connection string instead. |
 | `Username` | Yes for SQL Server | | SQL Server uses SQL authentication; Windows authentication is not available from a Linux container. |

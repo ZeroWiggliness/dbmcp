@@ -2,38 +2,60 @@
 
 A stdio MCP server for SQL Server, MySQL, PostgreSQL, and MongoDB. Configure named databases on the server; clients choose a name, never a connection string. Database permissions control what the tools can read or change. Only connect trusted MCP clients, since they run with the configured database credentials.
 
+> [!WARNING]
+> **This tool can be dangerous. Use it with caution.**
+> DbMcp gives an AI agent direct access to your databases. It can read, insert, change and delete data, and `execute_sql` runs any SQL it is given, including `DELETE`, `DROP` and `TRUNCATE`, using the credentials you configure. AI agents can misinterpret requests, and data returned from a database can contain instructions that manipulate the agent (prompt injection).
+>
+> - Use a dedicated, least-privilege database account; prefer read-only access.
+> - Never point it at production data without careful review, and keep tested backups.
+> - Only connect MCP clients you trust, and review tool calls before approving them.
+>
+> This software is provided "AS IS", without warranty of any kind. The authors and copyright holders accept no liability for any damage, data loss or other consequences of its use. You use it entirely at your own risk. See [LICENSE](LICENSE).
+
+Full documentation is in the [wiki](https://github.com/ZeroWiggliness/dbmcp/wiki).
+
 ## Run
 
-Requires the .NET 10 SDK or Docker. Set configuration in `appsettings.json`, user secrets, or environment variables. Do not commit credentials.
+DbMcp runs as a Docker container: `ghcr.io/zerowiggliness/dbmcp:latest`. Pin a version tag from [Releases](https://github.com/ZeroWiggliness/dbmcp/releases) for repeatable setups. Configure databases with environment variables named `DbMcp__Databases__<alias>__<Setting>`. Do not commit credentials.
+
+| Setting | Required | Notes |
+| --- | --- | --- |
+| `Provider` | Yes | `SqlServer`, `MySql`, `Postgres`, or `MongoDb` |
+| `Address` | Yes, unless `ConnectionString` is set | Host name as seen from inside the container |
+| `Port` | No | Defaults: MySQL 3306, Postgres 5432, MongoDB 27017 |
+| `DefaultDatabase` | Yes, unless `ConnectionString` is set | MongoDB may take it from the connection string instead |
+| `Username` / `Password` | Usually | Keep the password in a secret store |
+| `ConnectionString` | No | Replaces address, port, and credentials |
+| `ItemsPerPage` / `MaxItems` | No | Defaults 50 / 500; must be positive |
+
+The server talks MCP over stdin/stdout and writes logs to stderr. In VS Code, add to `.vscode/mcp.json`:
 
 ```json
 {
-  "DbMcp": {
-    "Databases": {
-      "local": {
-        "Provider": "Postgres",
-        "Address": "localhost",
-        "Port": 5432,
-        "DefaultDatabase": "sample",
-        "Username": "app",
-        "Password": "set-outside-source-control",
-        "ItemsPerPage": 50,
-        "MaxItems": 500
-      }
+  "inputs": [
+    { "type": "promptString", "id": "db-password", "description": "Database password", "password": true }
+  ],
+  "servers": {
+    "DbMcp": {
+      "type": "stdio",
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i",
+        "-e", "DbMcp__Databases__local__Provider=Postgres",
+        "-e", "DbMcp__Databases__local__Address=host.docker.internal",
+        "-e", "DbMcp__Databases__local__Port=5432",
+        "-e", "DbMcp__Databases__local__DefaultDatabase=sample",
+        "-e", "DbMcp__Databases__local__Username=app",
+        "-e", "DbMcp__Databases__local__Password",
+        "ghcr.io/zerowiggliness/dbmcp:latest"
+      ],
+      "env": { "DbMcp__Databases__local__Password": "${input:db-password}" }
     }
   }
 }
 ```
 
-`Provider` is `SqlServer`, `MySql`, `Postgres`, or `MongoDb`. `ConnectionString` may replace address, port, and credentials. MongoDB still needs `DefaultDatabase` unless it is included in the connection string. Override individual fields using environment variables such as `DbMcp__Databases__local__Password`. Keep the connection string or password in a secret store. `ItemsPerPage` and `MaxItems` must be positive.
-
-The server talks MCP over stdin/stdout and writes logs to stderr. In VS Code, add:
-
-```json
-{"servers":{"DbMcp":{"type":"stdio","command":"dotnet","args":["run","--project","C:/Projects/DbMcp/DbMcp.csproj"]}}}
-```
-
-For Docker, build with `docker build -t dbmcp .` and use `"command":"docker"` with `"args":["run","--rm","-i","-e","DbMcp__Databases__local__Provider=Postgres","-e","DbMcp__Databases__local__ConnectionString","dbmcp"]`; pass credentials through your secret mechanism rather than embedding them in the image or command history.
+`-e NAME` without a value passes the variable through from the client, so the password never appears in the arguments. Inside the container `localhost` is the container itself: use `host.docker.internal` for databases on your machine, or a shared Docker network for databases in other containers. See [Docker on Windows](https://github.com/ZeroWiggliness/dbmcp/wiki/Docker-on-Windows) and [MCP client setup](https://github.com/ZeroWiggliness/dbmcp/wiki/MCP-Client-Setup) for Claude Desktop, `--env-file`, and networking examples.
 
 ## Tools
 
@@ -41,6 +63,10 @@ All tools take `database`, a configured alias; it may be omitted only when exact
 
 `execute_sql` accepts `sql` and optional named `parameters` for relational providers. SQL text is executed with database credentials, including writes; returned result sets are capped at `MaxItems`. Only scalar JSON parameter values are supported for relational SQL. MongoDB accepts one `SELECT fields FROM collection [WHERE field =|>|>=|<|<= literal [AND ...]] [ORDER BY field [ASC|DESC]] [LIMIT positive_integer]` query, with no parameters. Unsupported SQL clauses and expressions are rejected; results are capped at `MaxItems`. MongoDB is not a general SQL engine.
 
-## Verification
+## Development
 
-Run `dotnet test DbMcp.Tests/DbMcp.Tests.csproj --collect:"XPlat Code Coverage"` with Docker running. The suite starts disposable SQL Server, MySQL, PostgreSQL, and MongoDB instances using Testcontainers. CI checks formatting, requires 95% line coverage, then publishes `ghcr.io/<owner>/<repo>:latest` after a passing push to the default branch. Local Release coverage measured **96.03%** across 33 passing tests; publishing still depends on the workflow passing in GitHub Actions.
+For contributors only. Run `dotnet test DbMcp.Tests/DbMcp.Tests.csproj -c Release --settings .runsettings --collect:"XPlat Code Coverage"` with Docker running. The suite starts disposable SQL Server, MySQL, PostgreSQL, and MongoDB instances using Testcontainers. CI fails below 95% line coverage (`Program.cs` excluded), then publishes `ghcr.io/zerowiggliness/dbmcp:latest` and a release-version tag after a passing push to the default branch.
+
+## License
+
+[MIT](LICENSE). Provided "AS IS", without warranty or liability.

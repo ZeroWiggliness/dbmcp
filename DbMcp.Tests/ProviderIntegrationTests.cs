@@ -78,6 +78,24 @@ public class ProviderIntegrationTests
         Assert.Equal(1, await tools.Insert("items", new() { ["id"] = Json(4), ["name"] = Json("four") }, "local", CancellationToken.None));
         Assert.Equal(1, await tools.Delete("items", new() { ["id"] = Json(4) }, "local", CancellationToken.None));
         await Assert.ThrowsAsync<ArgumentException>(() => adapter.InsertAsync("items", new() { ["id"] = Json(new[] { 1, 2 }) }, CancellationToken.None));
+
+        var qualified = (await adapter.ListTablesAsync(CancellationToken.None)).First(name => name.EndsWith(".items", StringComparison.OrdinalIgnoreCase));
+        Assert.NotEmpty((await adapter.GetSchemaAsync(qualified, CancellationToken.None)).Columns);
+        Assert.NotNull((await adapter.ExecuteSqlAsync("SELECT * FROM items WHERE id < @limit", new() { ["limit"] = Json(3.5) }, CancellationToken.None)).Rows);
+        Assert.NotNull(await tools.GetRow("items", null, "name", Json("item3"), "local"));
+
+        await using (var connection = DatabaseRegistry.OpenSqlConnection(options))
+        {
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = $"CREATE TABLE logs (message VARCHAR(100) NULL, flag {(options.Provider == "SqlServer" ? "BIT" : "BOOLEAN")} NOT NULL)";
+            await command.ExecuteNonQueryAsync();
+        }
+        Assert.Equal(1, await adapter.InsertAsync("logs", new() { ["message"] = Json((string?)null), ["flag"] = Json(true) }, CancellationToken.None));
+        Assert.Equal(1, await adapter.InsertAsync("logs", new() { ["message"] = Json("done"), ["flag"] = Json(false) }, CancellationToken.None));
+        var noKey = await Assert.ThrowsAsync<ArgumentException>(() => adapter.GetPageAsync("logs", 1, CancellationToken.None));
+        Assert.Equal("Pagination requires a primary key.", noKey.Message);
+        await Assert.ThrowsAsync<ArgumentException>(() => adapter.DeleteAsync("logs", new() { ["message"] = Json("done") }, CancellationToken.None));
     }
 
     [Fact]
@@ -94,6 +112,9 @@ public class ProviderIntegrationTests
         await using var container = new MySqlBuilder("mysql:8.0").WithDatabase("test").Build();
         await container.StartAsync();
         await ExerciseSqlAsync(new DatabaseOptions { Provider = "MySql", ConnectionString = container.GetConnectionString(), DefaultDatabase = "test", ItemsPerPage = 2, MaxItems = 3 });
+
+        var fromConnectionString = new SqlDatabaseAdapter(new DatabaseOptions { Provider = "MySql", ConnectionString = container.GetConnectionString() });
+        Assert.Equal("test.items", (await fromConnectionString.GetSchemaAsync("items", CancellationToken.None)).Name);
     }
 
     [Fact]
@@ -129,6 +150,9 @@ public class ProviderIntegrationTests
         Assert.NotNull(await adapter.GetRowAsync("items", keys, null, null, CancellationToken.None));
         Assert.NotNull(await adapter.GetRowAsync("items", [], "price", Json(2), CancellationToken.None));
         Assert.Null(await adapter.GetRowAsync("items", [], "price", Json(99), CancellationToken.None));
+        Assert.NotNull(await adapter.GetRowAsync("items", [], "_id", Json(ids[1]), CancellationToken.None));
+        await Assert.ThrowsAsync<ArgumentException>(() => adapter.GetSchemaAsync("missing", CancellationToken.None));
+        Assert.Equal(3, (await adapter.ExecuteSqlAsync("SELECT * FROM items ORDER BY price ASC LIMIT 10", [], CancellationToken.None)).Rows!.Count);
         Assert.Equal(2, (await adapter.GetPageAsync("items", 1, CancellationToken.None)).NextPage);
         Assert.Single((await adapter.GetPageAsync("items", 2, CancellationToken.None)).Items);
         Assert.Empty((await adapter.GetPageAsync("items", 3, CancellationToken.None)).Items);

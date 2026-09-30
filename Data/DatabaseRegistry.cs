@@ -46,12 +46,14 @@ public sealed class DatabaseRegistry(IConfiguration configuration)
 
         return options.Provider switch
         {
+            "SqlServer" when string.IsNullOrWhiteSpace(options.Username) =>
+                throw new ArgumentException("SQL Server requires a username unless a connection string is configured."),
             "SqlServer" => new SqlConnection(new SqlConnectionStringBuilder
             {
                 DataSource = options.Address + (options.Port is > 0 ? $",{options.Port}" : ""),
                 InitialCatalog = options.DefaultDatabase,
                 UserID = options.Username,
-                Password = options.Password,
+                Password = options.Password ?? "",
                 Encrypt = true,
                 TrustServerCertificate = true
             }.ConnectionString),

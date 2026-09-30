@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="DbMcp.csproj" />
+  <Project Path="DbMcp.Tests/DbMcp.Tests.csproj" />
+</Solution>

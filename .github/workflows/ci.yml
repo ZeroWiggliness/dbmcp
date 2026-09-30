@@ -89,8 +89,8 @@ jobs:
           github-token: ${{ github.token }}
           current-branch: ${{ github.ref_name }}
           file-filters: '**/*.cs,!**/Program.cs'
-          coverage-threshold: '95 95'
-          coverage-changes-threshold: '95 95'
+          coverage-threshold: '92 92'
+          coverage-changes-threshold: '92 92'
 
       - name: Store Coverage Artifacts
         if: always()

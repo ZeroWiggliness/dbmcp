@@ -7,6 +7,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>5722846f-b28f-4d1c-940d-1fb5db46e8a5</UserSecretsId>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
 
 
     <!-- Set up the MCP server to be a self-contained application that does not rely on a shared framework -->

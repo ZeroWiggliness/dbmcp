@@ -12,8 +12,8 @@ DbMcp is a [Model Context Protocol](https://modelcontextprotocol.io) (MCP) serve
 | --- | --- |
 | [[Configuration]] | Environment variables, providers, validation rules, config file mounting |
 | [[Tools]] | Every MCP tool, its parameters, results and examples |
-| [[MCP Client Setup|MCP-Client-Setup]] | Adding DbMcp to VS Code and Claude Desktop |
-| [[Docker on Windows|Docker-on-Windows]] | Reaching databases on the host, in other containers, in Compose or WSL |
+| [MCP Client Setup](MCP-Client-Setup) | Adding DbMcp to VS Code and Claude Desktop |
+| [Docker on Windows](Docker-on-Windows) | Reaching databases on the host, in other containers, in Compose or WSL |
 
 ## How it works
 
@@ -72,7 +72,7 @@ flowchart LR
 
 3. Start the server from the MCP view and ask the agent to "list the tables in the local database".
 
-See [[MCP Client Setup|MCP-Client-Setup]] for Claude Desktop, env files and multiple databases, and [[Docker on Windows|Docker-on-Windows]] if the database runs in another container.
+See [MCP Client Setup](MCP-Client-Setup) for Claude Desktop, env files and multiple databases, and [Docker on Windows](Docker-on-Windows) if the database runs in another container.
 
 ## Safety
 

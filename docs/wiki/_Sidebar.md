@@ -2,8 +2,8 @@
 
 - [[Configuration]]
 - [[Tools]]
-- [[MCP Client Setup|MCP-Client-Setup]]
-- [[Docker on Windows|Docker-on-Windows]]
+- [MCP Client Setup](MCP-Client-Setup)
+- [Docker on Windows](Docker-on-Windows)
 
 **Safety**
 

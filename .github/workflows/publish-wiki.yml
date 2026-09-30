@@ -2,6 +2,7 @@ name: Publish Wiki
 on:
   release:
     types: [created]
+  workflow_dispatch:
 
 concurrency:
   group: publish-wiki
@@ -38,5 +39,5 @@ jobs:
             echo "No wiki changes to publish."
             exit 0
           fi
-          git commit -m "Publish wiki for ${{ github.event.release.tag_name }}"
+          git commit -m "Publish wiki for ${{ github.event.release.tag_name || github.sha }}"
           git push

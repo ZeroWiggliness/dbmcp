@@ -26,7 +26,7 @@ DbMcp runs only as a Docker container: `ghcr.io/zerowiggliness/dbmcp:latest`. Ev
 | `-e NAME=value` | Sets a non-secret setting. |
 | `-e NAME` | Passes `NAME` through from the client's environment (use this for secrets). |
 | `--env-file path` | Loads settings from a file. |
-| `--network name` | Joins a Docker network so the server can reach database containers by name. See [[Docker on Windows|Docker-on-Windows]]. |
+| `--network name` | Joins a Docker network so the server can reach database containers by name. See [Docker on Windows](Docker-on-Windows). |
 
 Setting names are described in [[Configuration]].
 
@@ -197,7 +197,7 @@ Any client can mount a JSON config file instead of passing settings one by one (
 | `Unknown database name.` | `database` doesn't match any alias | Check the alias in the `DbMcp__Databases__<alias>__...` names. |
 | `Database name is required ...` | Several aliases, `database` omitted | Pass `database` on each call. |
 | `Database address and default database are required.` | A variable wasn't passed into the container | `-e NAME` only works if `NAME` is set in the client's `env`. |
-| Connection refused or timeout | `localhost` points at the container itself | See [[Docker on Windows|Docker-on-Windows]]. |
+| Connection refused or timeout | `localhost` points at the container itself | See [Docker on Windows](Docker-on-Windows). |
 | Login failed / permission denied | Wrong credentials or insufficient grants | Test the account with your normal database tool first. |
 
 Server logs go to stderr. In VS Code, open them with **MCP: List Servers → DbMcp → Show Output**.

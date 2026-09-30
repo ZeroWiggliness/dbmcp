@@ -1,3 +1,12 @@
+## v0.0.2
+
+### Chores
+* *(master)* Release v0.0.1 ([#19](https://github.com/ZeroWiggliness/dbmcp/issues/19)) ([51524cb](https://github.com/ZeroWiggliness/dbmcp/commit/51524cb67837b6dcf90752a10d327596b4646c29))
+* Initial release ([10baa68](https://github.com/ZeroWiggliness/dbmcp/commit/10baa68a3eef0f03914bb72e1b14a52735553dcb))
+
+---
+_Generated on 2026-09-30_
+
 ## v0.0.1
 
 ### Chores

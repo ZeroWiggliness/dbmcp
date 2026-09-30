@@ -1,0 +1,19 @@
+{
+  "provider": "github",
+  "release": {
+    "prerelease": false,
+    "releaseBranchPrefix": "feature/",
+    "maxReleases": 10,
+    "maxCommits": 100,
+    "includeChores": true
+  },
+  "version": "v0.0.0",
+  "versionPrefix": "v",
+  "manifests": [
+    {
+      "path": ".",
+      "type": "csharp",
+      "version": "0.0.0"
+    }
+  ]
+}

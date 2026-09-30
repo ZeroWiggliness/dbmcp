@@ -1,0 +1,165 @@
+name: Continuous Integration
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest   
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: read
+      checks: write
+      packages: write
+    env:
+      USERPROFILE: "./"
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    outputs:
+      current-version: ${{ steps.auto-release.outputs.current-version }}
+      manifest-current-version: ${{ steps.auto-release.outputs.manifest-current-version-0 }}
+      created: ${{ steps.auto-release.outputs.created }}
+      pr-created: ${{ steps.auto-release.outputs.created-pr }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # Fetch all history for all branches and tags
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.x'
+
+      - name: Install additional .NET tools
+        run: |
+          dotnet tool install --global JetBrains.dotCover.CommandLineTools
+          dotnet tool install --global dotnet-reportgenerator-globaltool
+
+      - name: Auto Release
+        id: auto-release
+        uses: ZeroWiggliness/another-release-please-action@master
+        with:
+          command: release, release-pr
+          token: ${{ secrets.RELEASE_PLEASE }}
+          target-branch: ${{ github.ref_name }}
+          dry-run: false
+          debug: ${{ runner.debug }}
+          release-branches: "master,release/v*"
+
+      - name: Log Auto Release outputs
+        run: echo '${{ toJSON(steps.auto-release.outputs) }}'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Test
+        run: |
+          dotnet test --logger "xunit;LogFileName=testoutputresults.xml" --collect:"XPlat Code Coverage" --results-directory "./.coverage" -c Release --no-build --settings .runsettings
+
+      - name: Copy Coverage Report
+        if: always()
+        run: |
+          find ./.coverage -name "coverage.cobertura.xml" -exec cp {} ./.coverage/ \;
+
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: |
+            ./.coverage/testoutputresults.xml
+
+      - name: Code Coverage Report
+        id: coverage
+        if: ${{ always() }}
+        uses: ZeroWiggliness/CoberturaChangeOnly@main
+        with:
+          cobertura-file: ./.coverage/coverage.cobertura.xml
+          output-file: ./.coverage/coverage.filtered.cobertura.xml
+          main-branch: ${{ github.event.repository.default_branch }}
+          github-token: ${{ github.token }}
+          current-branch: ${{ github.ref_name }}
+          file-filters: '**/*.cs,!**/Program.cs'
+          coverage-threshold: '95 95'
+          coverage-changes-threshold: '95 95'
+
+      - name: Store Coverage Artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cobertura-coverage
+          path: ./.coverage/coverage.filtered.cobertura.xml
+
+      - name: Add Coverage PR Comment
+        uses: marocchino/sticky-pull-request-comment@v3
+        if: always()
+        with:
+          recreate: true
+          header: 'Cobertura Coverage Report'
+          message: |
+            ${{ steps.coverage.outputs.coverage-badge }} ${{ steps.coverage.outputs.coverage-changes-badge }}
+            ${{ steps.coverage.outputs.coverage-markdown }}
+            ${{ steps.coverage.outputs.coverage-changes-markdown }}
+            ${{ steps.coverage.outputs.coverage-changes-missing-lines }}
+
+      - name: Add Build Output PR Comment
+        uses: marocchino/sticky-pull-request-comment@v3
+        if: always() && github.event_name == 'pull_request'
+        with:
+          recreate: true
+          header: 'Build Output'
+          message: |
+            ## 📦 Build Output
+
+            The published build output was cached for this workflow run and reused by the publish job.
+
+            - **Coverage Reports**: [cobertura-coverage](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+  publish:
+    name: Publish Docker Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    if: ${{ github.ref == 'refs/heads/master' }}
+    needs: build
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Login to Docker registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push latest image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./
+          file: ./Dockerfile
+          push: true
+          tags: "ghcr.io/${{ github.repository_owner }}/dbmcp:latest"
+          
+      - name: "Build and push release image ${{ needs.build.outputs.current-version }}"
+        if: ${{ needs.build.outputs.created }}
+        uses: docker/build-push-action@v7
+        with:
+          context: ./
+          file: ./Dockerfile
+          push: true
+          tags: "ghcr.io/${{ github.repository_owner }}/dbmcp:${{ needs.build.outputs.current-version }}"
+
+
+

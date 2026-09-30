@@ -112,7 +112,7 @@ jobs:
             ${{ steps.coverage.outputs.coverage-changes-missing-lines }}
 
       - name: Publish
-        run: dotnet publish --no-build --configuration Release --output ./dist
+        run: dotnet publish DbMcp.csproj --no-build --configuration Release --output ./dist
 
       - name: Cache Build Output
         uses: actions/cache@v4

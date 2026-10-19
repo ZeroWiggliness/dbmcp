@@ -1,3 +1,13 @@
+## v0.0.3
+
+### Chores
+* Bump coverlet.collector from 6.0.4 to 10.1.0 ([#23](https://github.com/ZeroWiggliness/dbmcp/issues/23)) ([92de9bc](https://github.com/ZeroWiggliness/dbmcp/commit/92de9bc9b18b3fc493e7a4ada2d03a0253415156))
+* Bump Microsoft.NET.Test.Sdk from 17.14.1 to 18.10.1 ([#24](https://github.com/ZeroWiggliness/dbmcp/issues/24)) ([033b075](https://github.com/ZeroWiggliness/dbmcp/commit/033b0754b35b6bd9c02e103e24ffcc6d9e1a582d))
+* fix wiki pages ([#21](https://github.com/ZeroWiggliness/dbmcp/issues/21)) ([4adfbf1](https://github.com/ZeroWiggliness/dbmcp/commit/4adfbf11fd1752aa3a78b226baf2610d647599f1))
+
+---
+_Generated on 2026-10-19_
+
 ## v0.0.2
 
 ### Chores
